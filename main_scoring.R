@@ -40,7 +40,8 @@ character_status <- character_tracker %>%
   select(character, glue("episode_{current_episode}")) %>%
   rename(status = glue("episode_{current_episode}"))
 
-# Load Player Sheet -------------------------------------------------------
+
+# Character Status Scoring ------------------------------------------------
 
 # Pull player responses off Google Drive
 player_responses <- gs_title("Game of Thrones Death Pool (Responses)") %>%
@@ -56,7 +57,7 @@ player_guesses <- player_responses %>%
          guess = str_to_lower(guess))
 
 # Attach and score results
-player_scores <- player_guesses %>%
+player_accuracy <- player_guesses %>%
   left_join(character_status, by = "character") %>%
   mutate(score = case_when(
     guess == "lives" & status == "L" ~ 1,
@@ -70,5 +71,45 @@ player_scores <- player_guesses %>%
     guess == "becomes_a_wight" & status == "W" ~ 2
   ))
 
+# Player scores (based on character status only)
+player_scores <- player_accuracy %>% 
+  group_by(email_address) %>% 
+  summarise(characters_score = sum(score)) %>% 
+  arrange(desc(characters_score))
 
-player_scores %>% group_by(email_address) %>% summarise(score = sum(score)) %>% arrange(desc(score))
+
+# Extras Scoring ----------------------------------------------------------
+
+# If Daenerys is pregnant, change to "Yes"
+is_daenerys_pregnant <- "No"
+
+# Capture all spelling variations for night_king_killer & iron_throne_winner 
+extras_accuracy <- player_responses %>%
+  select(email_address, is_daenerys_pregnant_2_point:who_holds_the_iron_throne_at_the_end_6_points) %>%
+  rename(daenerys_pregnant_guess = is_daenerys_pregnant_2_point,
+         night_king_killer = who_kills_the_night_king_4_points,
+         iron_throne_winner = who_holds_the_iron_throne_at_the_end_6_points) %>%
+  mutate(daenerys_score = case_when(
+    daenerys_pregnant_guess == "Yes" & is_daenerys_pregnant == "Yes" ~ 2,
+    TRUE ~ 0
+  )) %>%
+  mutate(night_king_score = case_when(
+    night_king_killer == "whoknows" ~ 4,
+    TRUE ~ 0
+  )) %>%
+  mutate(iron_throne_score = case_when(
+    iron_throne_winner == "whoknows" ~ 6,
+    TRUE ~ 0
+  ))
+
+extras_scores <- extras_accuracy %>% 
+  select(email_address, daenerys_score:iron_throne_score)
+
+
+
+# Total Scoring -----------------------------------------------------------
+
+total_scores <- player_scores %>%
+  left_join(extras_scores, by = "email_address") %>%
+  mutate(total_score = characters_score + daenerys_score + night_king_score + iron_throne_score) %>%
+  arrange(desc(total_score))
