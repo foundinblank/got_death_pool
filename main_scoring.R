@@ -117,10 +117,6 @@ first_name <- function(x){
 # Get names for each email address
 player_names <- player_responses %>%
   select(name, email_address) %>%
-  mutate(name = case_when(
-    email_address == "jilly5ca@me.com" ~ "Jill Stone",
-    TRUE ~ name
-  )) %>%
   mutate(name = map(name, first_name)) %>%
   mutate(name = as.character(name))
 
