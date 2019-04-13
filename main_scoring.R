@@ -109,7 +109,66 @@ extras_scores <- extras_accuracy %>%
 
 # Total Scoring -----------------------------------------------------------
 
+# Get first name
+first_name <- function(x){
+  str_split(x, " ")[[1]][1]
+}
+
+# Get names for each email address
+player_names <- player_responses %>%
+  select(name, email_address) %>%
+  mutate(name = case_when(
+    email_address == "jilly5ca@me.com" ~ "Jill Stone",
+    TRUE ~ name
+  )) %>%
+  mutate(name = map(name, first_name)) %>%
+  mutate(name = as.character(name))
+
+# Calculate total scores and attach player names
 total_scores <- player_scores %>%
   left_join(extras_scores, by = "email_address") %>%
   mutate(total_score = characters_score + daenerys_score + night_king_score + iron_throne_score) %>%
-  arrange(desc(total_score))
+  arrange(desc(total_score)) %>%
+  left_join(player_names, by = "email_address") %>%
+  select(name, email_address, everything()) 
+
+
+
+# Death Results -----------------------------------------------------------
+
+total_players <- nrow(player_responses)
+
+deaths <- character_status %>%
+  filter(status == "D") %>%
+  add_column(guess = "dies") %>%
+  left_join(player_guesses, by = c("guess", "character")) %>%
+  count(character, guess) %>%
+  rename(correct_guesses = n) %>%
+  mutate(total_guesses = total_players,
+         percent_correct = correct_guesses/total_guesses,
+         episode = current_episode)
+
+wights <- character_status %>%
+  filter(status == "W") %>%
+  add_column(guess = "becomes_a_wight") %>%
+  left_join(player_guesses, by = c("guess", "character")) %>%
+  count(character, guess) %>%
+  rename(correct_guesses = n) %>%
+  mutate(total_guesses = total_players,
+         percent_correct = correct_guesses/total_guesses,
+         episode = current_episode)
+
+death_results <- bind_rows(deaths, wights) %>%
+  mutate(percent_correct = round(percent_correct, 2))
+
+
+# Uploading Results -------------------------------------------------------
+
+# Upload leaderboard
+episode_results <- gs_title("GoT Death Pool Results")
+episode_results <- episode_results %>%
+  gs_ws_new(ws_title = glue("e{current_episode}_leaderboard"), input = total_scores)
+
+# Upload death results
+episode_results <- episode_results %>%
+  gs_ws_new(ws_title = glue("e{current_episode}_death_results"), input = death_results)
