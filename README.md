@@ -6,5 +6,6 @@ Scripts here to pull player sheets off Google Drive, score guesses/etc., and pus
 
 Contents: 
 1. `main_scoring.R` - the main script for scoring
+2. `player_responses.csv` - players' responses
 
 ![Arya: valar morghulis](https://media.giphy.com/media/c1oP0AunRfP7a/giphy.gif)

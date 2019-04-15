@@ -20,9 +20,18 @@ library(glue)
 
 current_episode = 0L
 
-# Character Status --------------------------------------------------------
 
-# Update after each episode. Key: 
+# Save Player Responses ---------------------------------------------------
+# One-time thing to pull player entries off Google Drive and save locally
+
+# orig_player_responses <- gs_title("GoT Death Pool Responses") %>%
+#   gs_read() %>%
+#   write_csv("player_responses.csv")
+
+
+# Character Status Tracker ------------------------------------------------
+
+# Updated after each episode. Key: 
 # L = alive
 # D = dead
 # W = turned into a wight/joined the Army of the Dead
@@ -44,15 +53,13 @@ character_status <- character_tracker %>%
 # Character Status Scoring ------------------------------------------------
 
 # Pull player responses off Google Drive
-player_responses <- gs_title("Game of Thrones Death Pool (Responses)") %>%
-  gs_read() %>%
+player_responses <- read_csv("player_responses.csv") %>%
   clean_names()
 
 # Set up players' character guesses
 player_guesses <- player_responses %>%
-  select(email_address, choose_wisely_nymeria:choose_wisely_daenerys_targaryen) %>%
-  gather(character, guess, -email_address) %>%
-  mutate(character = str_remove(character, "choose_wisely_")) %>%
+  select(name, nymeria:daenerys_targaryen) %>%
+  gather(character, guess, -name) %>%
   mutate(guess = str_replace_all(guess, " ", "_"),
          guess = str_to_lower(guess))
 
@@ -66,14 +73,14 @@ player_accuracy <- player_guesses %>%
     guess == "dies" & status == "L" ~ 0,
     guess == "dies" & status == "D" ~ 1,
     guess == "dies" & status == "W" ~ 0,
-    guess == "becomes_a_wight" & status == "L" ~ -1,
-    guess == "becomes_a_wight" & status == "D" ~ -1,
-    guess == "becomes_a_wight" & status == "W" ~ 2
+    guess == "wights" & status == "L" ~ -1,
+    guess == "wights" & status == "D" ~ -1,
+    guess == "wights" & status == "W" ~ 2
   ))
 
 # Player scores (based on character status only)
 player_scores <- player_accuracy %>% 
-  group_by(email_address) %>% 
+  group_by(name) %>% 
   summarise(characters_score = sum(score)) %>% 
   arrange(desc(characters_score))
 
@@ -85,16 +92,16 @@ is_daenerys_pregnant <- "No"
 
 # Capture all spelling variations for night_king_killer & iron_throne_winner 
 extras_accuracy <- player_responses %>%
-  select(email_address, is_daenerys_pregnant_2_point:who_holds_the_iron_throne_at_the_end_6_points) %>%
-  rename(daenerys_pregnant_guess = is_daenerys_pregnant_2_point,
-         night_king_killer = who_kills_the_night_king_4_points,
-         iron_throne_winner = who_holds_the_iron_throne_at_the_end_6_points) %>%
+  select(name, is_daenerys_pregnant_2_points:iron_throne_winner_6_points) %>%
+  rename(daenerys_pregnant_guess = is_daenerys_pregnant_2_points,
+         night_kingslayer = night_kingslayer_4_points,
+         iron_throne_winner = iron_throne_winner_6_points) %>%
   mutate(daenerys_score = case_when(
     daenerys_pregnant_guess == "Yes" & is_daenerys_pregnant == "Yes" ~ 2,
     TRUE ~ 0
   )) %>%
-  mutate(night_king_score = case_when(
-    night_king_killer == "whoknows" ~ 4,
+  mutate(night_kingslayer_score = case_when(
+    night_kingslayer == "whoknows" ~ 4,
     TRUE ~ 0
   )) %>%
   mutate(iron_throne_score = case_when(
@@ -103,30 +110,17 @@ extras_accuracy <- player_responses %>%
   ))
 
 extras_scores <- extras_accuracy %>% 
-  select(email_address, daenerys_score:iron_throne_score)
+  select(name, daenerys_score:iron_throne_score)
 
 
 
 # Total Scoring -----------------------------------------------------------
 
-# Get first name
-first_name <- function(x){
-  str_split(x, " ")[[1]][1]
-}
-
-# Get names for each email address
-player_names <- player_responses %>%
-  select(name, email_address) %>%
-  mutate(name = map(name, first_name)) %>%
-  mutate(name = as.character(name))
-
-# Calculate total scores and attach player names
+# Calculate total scores 
 total_scores <- player_scores %>%
-  left_join(extras_scores, by = "email_address") %>%
-  mutate(total_score = characters_score + daenerys_score + night_king_score + iron_throne_score) %>%
-  arrange(desc(total_score)) %>%
-  left_join(player_names, by = "email_address") %>%
-  select(name, email_address, everything()) 
+  left_join(extras_scores, by = "name") %>%
+  mutate(total_score = characters_score + daenerys_score + night_kingslayer_score + iron_throne_score) %>%
+  arrange(desc(total_score))
 
 
 
@@ -146,7 +140,7 @@ deaths <- character_status %>%
 
 wights <- character_status %>%
   filter(status == "W") %>%
-  add_column(guess = "becomes_a_wight") %>%
+  add_column(guess = "wights") %>%
   left_join(player_guesses, by = c("guess", "character")) %>%
   count(character, guess) %>%
   rename(correct_guesses = n) %>%
@@ -157,6 +151,11 @@ wights <- character_status %>%
 death_results <- bind_rows(deaths, wights) %>%
   mutate(percent_correct = round(percent_correct, 2))
 
+# Write "no deaths" if none occurred.
+if (nrow(death_results) == 0) {
+  death_results <- death_results %>%
+    add_row(character = "no deaths!")
+}
 
 # Uploading Results -------------------------------------------------------
 
