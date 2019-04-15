@@ -132,7 +132,7 @@ total_scores <- player_scores %>%
   mutate(bonuses_score = daenerys_score + night_kingslayer_score + iron_throne_score) %>%
   mutate(total_score = characters_score + bonuses_score) %>%
   arrange(desc(total_score)) %>%
-  select(name, total_score, everything())
+  select(name, total_score, characters_pct, characters_score, bonuses_score, everything())
 
 
 
