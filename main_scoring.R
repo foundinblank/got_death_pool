@@ -1,4 +1,6 @@
 # GoT Death Pool
+# Adam Stone (April 2019)
+# How to use: Just run the whole thing and it'll calculate/upload results to Google Drive
 
 library(tidyverse)
 library(googlesheets)
