@@ -78,12 +78,19 @@ player_accuracy <- player_guesses %>%
     guess == "wights" & status == "L" ~ -1,
     guess == "wights" & status == "D" ~ -1,
     guess == "wights" & status == "W" ~ 2
+  )) %>%
+  mutate(accuracy = case_when(
+    guess == "lives" & status == "L" ~ 1,
+    guess == "dies" & status == "D" ~ 1,
+    guess == "wights" & status == "W" ~ 1,
+    TRUE ~ 0
   ))
 
 # Player scores (based on character status only)
 player_scores <- player_accuracy %>% 
   group_by(name) %>% 
-  summarise(characters_score = sum(score)) %>% 
+  summarise(characters_score = sum(score),
+            characters_pct = round(sum(accuracy)/38,2)) %>% 
   arrange(desc(characters_score))
 
 
@@ -123,7 +130,8 @@ extras_scores <- extras_accuracy %>%
 total_scores <- player_scores %>%
   left_join(extras_scores, by = "name") %>%
   mutate(total_score = characters_score + daenerys_score + night_kingslayer_score + iron_throne_score) %>%
-  arrange(desc(total_score))
+  arrange(desc(total_score)) %>%
+  select(name, total_score, everything())
 
 
 
