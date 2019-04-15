@@ -129,7 +129,8 @@ extras_scores <- extras_accuracy %>%
 # Calculate total scores 
 total_scores <- player_scores %>%
   left_join(extras_scores, by = "name") %>%
-  mutate(total_score = characters_score + daenerys_score + night_kingslayer_score + iron_throne_score) %>%
+  mutate(bonuses_score = daenerys_score + night_kingslayer_score + iron_throne_score) %>%
+  mutate(total_score = characters_score + bonuses_score) %>%
   arrange(desc(total_score)) %>%
   select(name, total_score, everything())
 
