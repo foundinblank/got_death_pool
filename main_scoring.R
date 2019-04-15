@@ -20,7 +20,7 @@ library(glue)
 
 # Set Current Episode -----------------------------------------------------
 
-current_episode = 0L
+current_episode = 1L
 
 
 # Save Player Responses ---------------------------------------------------
@@ -100,6 +100,7 @@ extras_accuracy <- player_responses %>%
          iron_throne_winner = iron_throne_winner_6_points) %>%
   mutate(daenerys_score = case_when(
     daenerys_pregnant_guess == "Yes" & is_daenerys_pregnant == "Yes" ~ 2,
+    daenerys_pregnant_guess == "No" & is_daenerys_pregnant == "No" ~ 2,
     TRUE ~ 0
   )) %>%
   mutate(night_kingslayer_score = case_when(
