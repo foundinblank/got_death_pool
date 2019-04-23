@@ -7,6 +7,10 @@ library(googlesheets)
 library(janitor)
 library(glue)
 
+# Set Current Episode -----------------------------------------------------
+
+current_episode = 2L
+
 
 # Scoring Rules -----------------------------------------------------------
 
@@ -16,11 +20,6 @@ library(glue)
   # | is living  | 1               | 0              | -1              |
   # | is dead    | 0               | 1              | -1              |
   # | is a wight | 0               | 0              | 2               |
-
-
-# Set Current Episode -----------------------------------------------------
-
-current_episode = 1L
 
 
 # Save Player Responses ---------------------------------------------------
