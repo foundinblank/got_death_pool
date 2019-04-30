@@ -9,7 +9,7 @@ library(glue)
 
 # Set Current Episode -----------------------------------------------------
 
-current_episode = 2L
+current_episode = 3L
 
 
 # Scoring Rules -----------------------------------------------------------
@@ -110,7 +110,7 @@ extras_accuracy <- player_responses %>%
     TRUE ~ 0
   )) %>%
   mutate(night_kingslayer_score = case_when(
-    night_kingslayer == "whoknows" ~ 4,
+    str_detect(str_to_lower(night_kingslayer), 'arya') ~ 4,
     TRUE ~ 0
   )) %>%
   mutate(iron_throne_score = case_when(
@@ -153,14 +153,23 @@ wights <- character_status %>%
   filter(status == "W") %>%
   add_column(guess = "wights") %>%
   left_join(player_guesses, by = c("guess", "character")) %>%
+  drop_na() %>%
   count(character, guess) %>%
   rename(correct_guesses = n) %>%
   mutate(total_guesses = total_players,
          percent_correct = correct_guesses/total_guesses,
          episode = current_episode)
 
+# An ugly hack to handle Lyanna Mormont wighting (which no one guessed).
 death_results <- bind_rows(deaths, wights) %>%
-  mutate(percent_correct = round(percent_correct, 2))
+  mutate(percent_correct = round(percent_correct, 2)) %>%
+  add_row(character = 'lyanna_mormont',
+          guess = 'wights',
+          correct_guesses = 0,
+          total_guesses = 39,
+          percent_correct = 0,
+          episode = 3) %>%
+  arrange(episode, character)
 
 # Write "no deaths" if none occurred.
 if (nrow(death_results) == 0) {
