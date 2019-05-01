@@ -187,3 +187,34 @@ episode_results <- episode_results %>%
 # Upload death results
 episode_results <- episode_results %>%
   gs_ws_new(ws_title = glue("e{current_episode}_death_results"), input = death_results)
+
+
+
+# Calculating Streaks -----------------------------------------------------
+
+# Pull all scores off Google Drive
+episodes <- seq(1, current_episode)
+
+pull_scores <- function(x){
+  gs_title("GoT Death Pool Results") %>%
+  gs_read(ws = glue("e{x}_leaderboard"))
+}
+
+all_scores <- map_df(episodes, pull_scores, .id = 'episode')
+
+# Calculate streaks (per episode and overall)
+streaks <- all_scores %>%
+  select(name, episode, total_score) %>%
+  mutate(episode = glue("e{episode}")) %>%
+  spread(episode, total_score) %>%
+  mutate(streak_12 = e2 - e1,
+         streak_23 = e3 - e2,
+#         streak_34 = e4 - e3,
+#         streak_45 = e5 - e4,
+#         streak_56 = e6 - e5,
+         overall_streak = e3 - e1) %>%
+  arrange(desc(overall_streak))
+
+# Upload
+episode_results <- episode_results %>%
+  gs_ws_new(ws_title = glue("e{current_episode}_streaks"), input = streaks)
