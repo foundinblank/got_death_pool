@@ -9,7 +9,7 @@ library(glue)
 
 # Set Current Episode -----------------------------------------------------
 
-current_episode = 3L
+current_episode = 4L
 
 
 # Scoring Rules -----------------------------------------------------------
@@ -146,8 +146,7 @@ deaths <- character_status %>%
   count(character, guess) %>%
   rename(correct_guesses = n) %>%
   mutate(total_guesses = total_players,
-         percent_correct = correct_guesses/total_guesses,
-         episode = current_episode)
+         percent_correct = correct_guesses/total_guesses)
 
 wights <- character_status %>%
   filter(status == "W") %>%
@@ -157,8 +156,7 @@ wights <- character_status %>%
   count(character, guess) %>%
   rename(correct_guesses = n) %>%
   mutate(total_guesses = total_players,
-         percent_correct = correct_guesses/total_guesses,
-         episode = current_episode)
+         percent_correct = correct_guesses/total_guesses)
 
 # An ugly hack to handle Lyanna Mormont wighting (which no one guessed).
 death_results <- bind_rows(deaths, wights) %>%
@@ -167,9 +165,8 @@ death_results <- bind_rows(deaths, wights) %>%
           guess = 'wights',
           correct_guesses = 0,
           total_guesses = 39,
-          percent_correct = 0,
-          episode = 3) %>%
-  arrange(episode, character)
+          percent_correct = 0) %>%
+  arrange(character)
 
 # Write "no deaths" if none occurred.
 if (nrow(death_results) == 0) {
@@ -209,11 +206,18 @@ streaks <- all_scores %>%
   spread(episode, total_score) %>%
   mutate(streak_12 = e2 - e1,
          streak_23 = e3 - e2,
-#         streak_34 = e4 - e3,
+         streak_34 = e4 - e3,
 #         streak_45 = e5 - e4,
 #         streak_56 = e6 - e5,
-         overall_streak = e3 - e1) %>%
-  arrange(desc(overall_streak))
+         overall_streak = e4 - e1) %>%
+  mutate(overall_streak = case_when(
+    streak_34 >= 0 ~ overall_streak,
+    streak_34 < 0 ~ 0)) %>%
+  mutate(overall_streak = case_when(
+    overall_streak <= 0 ~ 0,
+    overall_streak > 0 ~ overall_streak
+  )) %>%
+  arrange(desc(e4))
 
 # Upload
 episode_results <- episode_results %>%
