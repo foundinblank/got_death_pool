@@ -201,24 +201,21 @@ all_scores <- map_df(episodes, pull_scores, .id = 'episode')
 
 # Calculate streaks (per episode and overall)
 streaks <- all_scores %>%
-  select(name, episode, total_score) %>%
-  mutate(episode = glue("e{episode}")) %>%
-  spread(episode, total_score) %>%
-  mutate(streak_12 = e2 - e1,
+    select(name, episode, total_score) %>%
+    mutate(episode = glue("e{episode}")) %>%
+    spread(episode, total_score) %>%
+    mutate(streak_12 = e2 - e1,
          streak_23 = e3 - e2,
          streak_34 = e4 - e3,
-         streak_45 = e5 - e4,
-#         streak_56 = e6 - e5,
-         overall_streak = e5 - e1) %>%
-  mutate(overall_streak = case_when(
-    streak_45 >= 0 ~ overall_streak,
-    streak_45 < 0 ~ 0)) %>%
-  mutate(overall_streak = case_when(
-    overall_streak <= 0 ~ 0,
-    overall_streak > 0 ~ overall_streak
+         streak_45 = e5 - e4) %>%
+  mutate(current_streak = case_when(
+    streak_23 >= 0 & streak_34 >= 0 & streak_45 >= 0 ~ (streak_23 + streak_34 + streak_45),
+    streak_45 < 0 ~ 0,
+    streak_34 < 0 ~ streak_45,
+    streak_23 < 0 ~ (streak_34 + streak_45)
   )) %>%
   arrange(desc(e5))
-
+  
 # Upload
 episode_results <- episode_results %>%
   gs_ws_new(ws_title = glue("e{current_episode}_streaks"), input = streaks)
