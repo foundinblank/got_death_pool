@@ -9,7 +9,7 @@ library(glue)
 
 # Set Current Episode -----------------------------------------------------
 
-current_episode = 5L
+current_episode = 6L
 
 
 # Scoring Rules -----------------------------------------------------------
@@ -114,7 +114,7 @@ extras_accuracy <- player_responses %>%
     TRUE ~ 0
   )) %>%
   mutate(iron_throne_score = case_when(
-    str_detect(str_to_lower(iron_throne_winner), 'daenerys targaryen') ~ 6,
+    str_detect(str_to_lower(iron_throne_winner), 'no one') ~ 6,
     TRUE ~ 0
   ))
 
@@ -207,12 +207,14 @@ streaks <- all_scores %>%
     mutate(streak_12 = e2 - e1,
          streak_23 = e3 - e2,
          streak_34 = e4 - e3,
-         streak_45 = e5 - e4) %>%
+         streak_45 = e5 - e4,
+         streak_56 = e6 - e5) %>%
   mutate(current_streak = case_when(
-    streak_23 >= 0 & streak_34 >= 0 & streak_45 >= 0 ~ (streak_23 + streak_34 + streak_45),
-    streak_45 < 0 ~ 0,
-    streak_34 < 0 ~ streak_45,
-    streak_23 < 0 ~ (streak_34 + streak_45)
+    streak_23 >= 0 & streak_34 >= 0 & streak_45 >= 0 & streak_56 >= 0 ~ (streak_23 + streak_34 + streak_45 + streak_56),
+    streak_56 < 0 ~ 0,
+    streak_45 < 0 ~ streak_56,
+    streak_34 < 0 ~ (streak_45 + streak_56),
+    streak_23 < 0 ~ (streak_34 + streak_45 + streak_56)
   )) %>%
   arrange(desc(e5))
   
