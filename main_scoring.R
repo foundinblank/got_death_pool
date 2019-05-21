@@ -221,3 +221,23 @@ streaks <- all_scores %>%
 # Upload
 episode_results <- episode_results %>%
   gs_ws_new(ws_title = glue("e{current_episode}_streaks"), input = streaks)
+
+
+
+
+
+# Character and Bonus Guesses ---------------------------------------------
+
+
+character_guesses <- player_guesses %>% 
+  group_by(character) %>% 
+  count(guess) %>% 
+  spread(guess, n) %>% 
+  mutate(expires = dies + wights)
+
+episode_results %>%
+  gs_ws_new(ws_title = glue("final_character_guesses"), input = character_guesses)
+
+player_responses %>% count(is_daenerys_pregnant_2_points)
+player_responses %>% count(night_kingslayer_4_points)
+player_responses %>% count(iron_throne_winner_6_points) %>%
